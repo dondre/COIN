@@ -70,9 +70,10 @@ contract Investment is Privileged {
     
     /**
      * @dev Broker (or buyer) will call invest to buy or short an array (could be just 1) of cryptos.
+     * @dev Fee must be included in addition to the investment wanting to be made in the COIN approval.
      * @param _beneficiary The address that is being bought for.
      * @param _cryptoIds The list of uint IDs for each crypto to buy.
-     * @param _amounts The amounts of each crypto to buy (measured in COIN wei!).
+     * @param _amounts The amounts of each crypto to buy (measured in the crypto's wei!).
      * @param _shorts Whether or not this crypto trade is a short.
     **/
     function invest(address _beneficiary, uint256[] _cryptoIds, uint256[] _amounts, bool[] _shorts)
@@ -92,11 +93,10 @@ contract Investment is Privileged {
             investAmount += buy(_beneficiary, _cryptoIds[i], _amounts[i], _shorts[i]);
         }
         // $1 USD = 10 ** 18 and we have a fee of $4.99
-        //uint256 fee = 4990000000000000000 * (10 ** 18) / cryptoAssets[0].price;
-        //require(withdrawAmount >= fee); 
-        
--       //assert(token.transferFrom(_beneficiary, owner, fee));
--       //assert(token.transferFrom(_beneficiary, bank, investAmount - fee));
+        uint256 fee = 4990000000000000000 * (10 ** 18) / cryptoAssets[0].price;
+
+        assert(token.transferFrom(_beneficiary, owner, fee));
+        assert(token.transferFrom(_beneficiary, bank, investAmount));
         
         Invest(_beneficiary, _cryptoIds, _amounts, _shorts, msg.sender);
         return true;
@@ -106,7 +106,7 @@ contract Investment is Privileged {
      * @dev Investor or broker will call this for an investor to sell one or multiple assets.
      * @param _beneficiary The address that is being sold for
      * @param _cryptoIds The list of uint IDs for each crypto
-     * @param _amounts The amounts of each crypto to sell (measured in COIN wei!)
+     * @param _amounts The amounts of each crypto to sell (measured in the crypto's wei!)
      * @param _shorts Whether or not this crypto trade is a short.
     **/
     function liquidate(address _beneficiary, uint256[] _cryptoIds, uint256[] _amounts, bool[] _shorts)
@@ -122,11 +122,11 @@ contract Investment is Privileged {
             require(_amounts[i] > 0);
             withdrawAmount += sell(_beneficiary, _cryptoIds[i], _amounts[i], _shorts[i]);
         }
-        //uint256 fee = 4990000000000000000 * (10 ** 18) / cryptoAssets[0].price;
-        //require(withdrawAmount >= fee); 
-        
-        //assert(bank.transfer(owner, fee));
-        //assert(bank.transfer(_beneficiary, withdrawAmount - fee));
+        uint256 fee = 4990000000000000000 * (10 ** 18) / cryptoAssets[0].price;
+        require(withdrawAmount >= fee);
+
+        assert(bank.transfer(owner, fee));
+        assert(bank.transfer(_beneficiary, withdrawAmount - fee));
 
         Liquidate(_beneficiary, _cryptoIds, _amounts, _shorts, msg.sender);
         return true;
