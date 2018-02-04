@@ -36,7 +36,7 @@ contract Investment is Privileged {
     struct CryptoAsset {
         uint256 cryptoId;           // Assigned unique ID for the crypto.
         string name;                // Symbol of the crypto.
-        uint256 price;              // In USD / 10^18
+        uint256 price;              // In USD * 10^18
         uint256 decimals;           // Number of decimal places the crypto has.
     }
 
