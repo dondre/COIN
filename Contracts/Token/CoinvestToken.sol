@@ -5,13 +5,13 @@ pragma solidity ^0.4.9;
  */
  
 contract ContractReceiver {
-    function tokenFallback(address _from, uint _value, bytes _data);
+    function tokenFallback(address _from, uint _value, bytes _data) public;
 } 
 
  /**
- * ERC23 token by Dexaran
+ * ERC223 token by Dexaran
  *
- * https://github.com/Dexaran/ERC23-tokens
+ * https://github.com/Dexaran/ERC223-tokens
  */
  
  
@@ -40,11 +40,13 @@ contract SafeMath {
 contract CoinvestToken is SafeMath {
     
     address public maintainer = msg.sender;
+    address public icoContract; // icoContract is needed to allow it to transfer tokens during crowdsale.
+    uint256 public lockupEndBlock; // lockupEndBlock is needed to determine when users may start transferring.
     
     bool public ERC223Transfer_enabled = false;
     bool public Transfer_data_enabled = false;
     bool public Transfer_nodata_enabled = true;
-    
+
     event Transfer(address indexed from, address indexed to, uint value, bytes data);
     event ERC223Transfer(address indexed from, address indexed to, uint value, bytes data);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -59,21 +61,22 @@ contract CoinvestToken is SafeMath {
     string public constant symbol = "COIN";
     string public constant name = "Coinvest";
     
-    uint256 public constant decimals = 18;
-    uint256 _totalSupply = 133928571 * (10 ** 18);
+    uint8 public constant decimals = 18;
+    uint256 public totalSupply = 107142857 * (10 ** 18);
     
     /**
      * @dev Set owner and beginning balance.
     **/
-    function CoinvestToken()
+    function CoinvestToken(uint256 _lockupEndBlock)
       public
     {
-        balances[msg.sender] = _totalSupply;
+        balances[msg.sender] = totalSupply;
+        lockupEndBlock = _lockupEndBlock;
     }
   
   
     // Function that is called when a user or another contract wants to transfer funds .
-    function transfer(address _to, uint _value, bytes _data, string _custom_fallback) returns (bool success) {
+    function transfer(address _to, uint _value, bytes _data, string _custom_fallback) transferable returns (bool success) {
       
         if(isContract(_to)) {
             if (balanceOf(msg.sender) < _value) throw;
@@ -99,14 +102,13 @@ contract CoinvestToken is SafeMath {
         }
     }
 
-    function ERC20transfer(address _to, uint _value, bytes _data) returns (bool success) {
+    function ERC20transfer(address _to, uint _value, bytes _data) transferable returns (bool success) {
         bytes memory empty;
         return transferToAddress(_to, _value, empty);
     }
-  
 
     // Function that is called when a user or another contract wants to transfer funds .
-    function transfer(address _to, uint _value, bytes _data) returns (bool success) {
+    function transfer(address _to, uint _value, bytes _data) transferable returns (bool success) {
         if(isContract(_to)) {
             return transferToContract(_to, _value, _data);
         }
@@ -117,7 +119,7 @@ contract CoinvestToken is SafeMath {
   
     // Standard function transfer similar to ERC20 transfer with no _data .
     // Added due to backwards compatibility reasons .
-    function transfer(address _to, uint _value) returns (bool success) {
+    function transfer(address _to, uint _value) transferable returns (bool success) {
       
         //standard function transfer similar to ERC20 transfer with no _data
         //added due to backwards compatibility reasons
@@ -131,7 +133,7 @@ contract CoinvestToken is SafeMath {
     }
 
     //assemble the given address bytecode. If bytecode exists then the _addr is a contract.
-    function isContract(address _addr) private returns (bool is_contract) {
+    function isContract(address _addr) public returns (bool is_contract) {
         uint length;
         assembly {
             //retrieve the size of the code on target address, this needs assembly
@@ -195,6 +197,7 @@ contract CoinvestToken is SafeMath {
     **/
     function transferFrom(address _from, address _to, uint _amount)
       external
+      transferable
     returns (bool success)
     {
         require(balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount);
@@ -215,12 +218,37 @@ contract CoinvestToken is SafeMath {
     **/
     function approve(address _spender, uint256 _amount) 
       external
+      transferable // Protect from unlikely maintainer-receiver trickery
     {
         require(_amount == 0 || allowed[msg.sender][_spender] == 0);
         require(balances[msg.sender] >= _amount);
         
         allowed[msg.sender][_spender] = _amount;
         Approval(msg.sender, _spender, _amount);
+    }
+    
+    /**
+     * @dev Allow the owner to take ERC20 tokens off of this contract if they are accidentally sent.
+    **/
+    function token_escape(address _tokenContract)
+      external
+      only_maintainer
+    {
+        CoinvestToken lostToken = CoinvestToken(_tokenContract);
+        
+        uint256 stuckTokens = lostToken.balanceOf(address(this));
+        lostToken.transfer(maintainer, stuckTokens);
+    }
+
+    /**
+     * @dev Allow maintainer to set the ico contract for transferable permissions.
+    **/
+    function setIcoContract(address _icoContract)
+      external
+      only_maintainer
+    {
+        require(icoContract == 0);
+        icoContract = _icoContract;
     }
 
     /**
@@ -256,4 +284,13 @@ contract CoinvestToken is SafeMath {
         assert(msg.sender == maintainer);
         _;
     }
+    
+    modifier transferable
+    {
+        if (block.number < lockupEndBlock) {
+            require(msg.sender == maintainer || msg.sender == icoContract);
+        }
+        _;
+    }
+    
 }
