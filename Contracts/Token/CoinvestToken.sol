@@ -39,9 +39,9 @@ contract SafeMath {
  
 contract CoinvestToken is SafeMath {
     
-    address public maintainer = msg.sender;
+    address public maintainer;
     address public icoContract; // icoContract is needed to allow it to transfer tokens during crowdsale.
-    uint256 public lockupEndBlock; // lockupEndBlock is needed to determine when users may start transferring.
+    uint256 public lockupEndTime; // lockupEndTime is needed to determine when users may start transferring.
     
     bool public ERC223Transfer_enabled = false;
     bool public Transfer_data_enabled = false;
@@ -59,19 +59,21 @@ contract CoinvestToken is SafeMath {
   
 
     string public constant symbol = "COIN";
-    string public constant name = "Coinvest";
+    string public constant name = "Coinvest COIN Token";
     
     uint8 public constant decimals = 18;
     uint256 public totalSupply = 107142857 * (10 ** 18);
     
     /**
      * @dev Set owner and beginning balance.
+     * @param _lockupEndTime The time at which the token may be traded.
     **/
-    function CoinvestToken(uint256 _lockupEndBlock)
+    function CoinvestToken(uint256 _lockupEndTime)
       public
     {
         balances[msg.sender] = totalSupply;
-        lockupEndBlock = _lockupEndBlock;
+        lockupEndTime = _lockupEndTime;
+        maintainer = msg.sender;
     }
   
   
@@ -220,7 +222,6 @@ contract CoinvestToken is SafeMath {
       external
       transferable // Protect from unlikely maintainer-receiver trickery
     {
-        require(_amount == 0 || allowed[msg.sender][_spender] == 0);
         require(balances[msg.sender] >= _amount);
         
         allowed[msg.sender][_spender] = _amount;
@@ -285,9 +286,18 @@ contract CoinvestToken is SafeMath {
         _;
     }
     
+    /**
+     * @dev Allows the current maintainer to transfer maintenance of the contract to a new maintainer.
+     * @param newMaintainer The address to transfer ownership to.
+     */
+    function transferMaintainer(address newMaintainer) only_maintainer public {
+        require(newMaintainer != address(0));
+        maintainer = newMaintainer;
+    }
+    
     modifier transferable
     {
-        if (block.number < lockupEndBlock) {
+        if (block.timestamp < lockupEndTime) {
             require(msg.sender == maintainer || msg.sender == icoContract);
         }
         _;
