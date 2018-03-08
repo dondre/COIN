@@ -190,6 +190,10 @@ contract CoinvestToken is SafeMath {
     function balanceOf(address _owner) constant returns (uint balance) {
         return balances[_owner];
     }
+    
+    function totalSupply() constant returns (uint256) {
+        return totalSupply;
+    }
 
     /**
      * @dev An allowed address can transfer tokens from another's address.
