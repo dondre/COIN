@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
-import '../Ownership/Privileged.sol';
-import '../Token/CoinvestToken.sol';
+import './Privileged.sol';
+import './CoinvestToken.sol';
 
 /**
  * @title Bank
@@ -21,6 +21,16 @@ contract Bank is Privileged {
         coinvestToken = CoinvestToken(_coinvestToken);
     }
     
+    /**
+     * @dev ERC223 Compatibility for our Coinvest token.
+    **/
+    function tokenFallback(address, uint, bytes)
+      public
+      view
+    {
+        require(msg.sender == address(coinvestToken));
+    }
+
 /** ****************************** Only Investment ****************************** **/
     
     /**
