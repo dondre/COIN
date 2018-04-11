@@ -251,7 +251,7 @@ contract CoinvestToken is Ownable {
             require(_transfer(from, msg.sender, _gasPrice * gas));
         }
         
-		return true;
+	return true;
     }
     
     /**
@@ -280,7 +280,7 @@ contract CoinvestToken is Ownable {
             gas = 35000 + gas.sub(gasleft());
             require(_transfer(from, msg.sender, _gasPrice * gas));
         }
-		return true;
+	return true;
     }
     
     /**
@@ -313,7 +313,7 @@ contract CoinvestToken is Ownable {
             gas = 35000 + gas.sub(gasleft());
             require(_transfer(from, msg.sender, _gasPrice * gas));
         }
-		return true;
+	return true;
     }
     
 /** ************************** PreSigned Constants ************************ **/
