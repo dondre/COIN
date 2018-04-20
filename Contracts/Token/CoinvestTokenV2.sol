@@ -221,27 +221,27 @@ contract CoinvestToken is Ownable {
      * @param _nonce Nonce of the user's new transaction.
     **/
     function transferPreSigned(
-		bytes _signature,
-		address _to, 
-		uint256 _value, 
-		uint256 _gasPrice, 
-		uint256 _nonce) 
-	  public
-	returns (bool) 
-	{
-	    // Log starting gas left of transaction for later gas price calculations.
-	    uint256 gas = gasleft();
-	    
-	    // Recover signer address from signature; ensure address is valid.
-	    address from = recoverTransferPreSigned(_signature, _to, _value, _gasPrice, _nonce);
-	    require(from != address(0));
-	    
-	    // Require the nonce is exactly the next in line; increment nonce.
-	    require(_nonce == nonces[from] + 1);
-	    nonces[from]++;
-	    
-	    // Internal transfer.
-		require(_transfer(from, _to, _value));
+        bytes _signature,
+        address _to, 
+        uint256 _value, 
+        uint256 _gasPrice, 
+        uint256 _nonce) 
+      public
+    returns (bool) 
+    {
+        // Log starting gas left of transaction for later gas price calculations.
+        uint256 gas = gasleft();
+        
+        // Recover signer address from signature; ensure address is valid.
+        address from = recoverTransferPreSigned(_signature, _to, _value, _gasPrice, _nonce);
+        require(from != address(0));
+        
+        // Require the nonce is exactly the next in line; increment nonce.
+        require(_nonce == nonces[from] + 1);
+        nonces[from]++;
+        
+        // Internal transfer.
+        require(_transfer(from, _to, _value));
 
         // If the delegate is charging, pay them for gas in COIN.
         if (_gasPrice > 0) {
@@ -251,7 +251,7 @@ contract CoinvestToken is Ownable {
             require(_transfer(from, msg.sender, _gasPrice * gas));
         }
         
-	return true;
+        return true;
     }
     
     /**
@@ -260,27 +260,27 @@ contract CoinvestToken is Ownable {
      * @param _to The address that will be approved to transfer COIN from user's wallet.
     **/
     function approvePreSigned(
-		bytes _signature,
-		address _to, 
-		uint256 _value, 
-		uint256 _gasPrice, 
-		uint256 _nonce) 
-	  public
-	returns (bool) 
-	{
-	    uint256 gas = gasleft();
-	    address from = recoverApprovePreSigned(_signature, _to, _value, _gasPrice, _nonce);
-	    require(from != address(0));
-	    require(_nonce == nonces[from] + 1);
-	    nonces[from]++;
-		
+        bytes _signature,
+        address _to, 
+        uint256 _value, 
+        uint256 _gasPrice, 
+        uint256 _nonce) 
+      public
+    returns (bool) 
+    {
+        uint256 gas = gasleft();
+        address from = recoverApprovePreSigned(_signature, _to, _value, _gasPrice, _nonce);
+        require(from != address(0));
+        require(_nonce == nonces[from] + 1);
+        nonces[from]++;
+        
         require(_approve(from, _to, _value));
 
         if (_gasPrice > 0) {
             gas = 35000 + gas.sub(gasleft());
             require(_transfer(from, msg.sender, _gasPrice * gas));
         }
-	return true;
+        return true;
     }
     
     /**
@@ -291,21 +291,21 @@ contract CoinvestToken is Ownable {
      * @param _extraData The data to send to the contract.
     **/
     function approveAndCallPreSigned(
-		bytes _signature,
-		address _to, 
-		uint256 _value,
-		bytes _extraData,
-		uint256 _gasPrice, 
-		uint256 _nonce) 
-	  public
-	returns (bool) 
-	{
-	    uint256 gas = gasleft();
-	    address from = recoverApproveAndCallPreSigned(_signature, _to, _value, _extraData, _gasPrice, _nonce);
-	    require(from != address(0));
-	    require(_nonce == nonces[from] + 1);
-	    nonces[from]++;
-		
+        bytes _signature,
+        address _to, 
+        uint256 _value,
+        bytes _extraData,
+        uint256 _gasPrice, 
+        uint256 _nonce) 
+      public
+    returns (bool) 
+    {
+        uint256 gas = gasleft();
+        address from = recoverApproveAndCallPreSigned(_signature, _to, _value, _extraData, _gasPrice, _nonce);
+        require(from != address(0));
+        require(_nonce == nonces[from] + 1);
+        nonces[from]++;
+        
         require(_approve(from, _to, _value));
         ApproveAndCallFallBack(_to).receiveApproval(from, _value, address(this), _extraData);
 
@@ -313,7 +313,7 @@ contract CoinvestToken is Ownable {
             gas = 35000 + gas.sub(gasleft());
             require(_transfer(from, msg.sender, _gasPrice * gas));
         }
-	return true;
+        return true;
     }
     
 /** ************************** PreSigned Constants ************************ **/
@@ -326,10 +326,10 @@ contract CoinvestToken is Ownable {
      * @param _nonce The user's nonce of the new transaction.
     **/
     function getTransferHash(
-		address _to, 
-		uint256 _value, 
-		uint256 _gasPrice,
-		uint256 _nonce)
+        address _to, 
+        uint256 _value, 
+        uint256 _gasPrice,
+        uint256 _nonce)
       public
       view
     returns (bytes32 txHash) {
@@ -342,10 +342,10 @@ contract CoinvestToken is Ownable {
      * @param _to The address to approve to spend COIN from the signing user.
     **/
     function getApproveHash(
-		address _to, 
-		uint256 _value, 
-		uint256 _gasPrice,
-		uint256 _nonce)
+        address _to, 
+        uint256 _value, 
+        uint256 _gasPrice,
+        uint256 _nonce)
       public
       view
     returns (bytes32 txHash) {
@@ -358,11 +358,11 @@ contract CoinvestToken is Ownable {
      * @param _extraData The data to include in the call to the _to contract (spender).
     **/
     function getApproveAndCallHash(
-		address _to, 
-		uint256 _value,
-		bytes _extraData,
-		uint256 _gasPrice,
-		uint256 _nonce)
+        address _to, 
+        uint256 _value,
+        bytes _extraData,
+        uint256 _gasPrice,
+        uint256 _nonce)
       public
       view
     returns (bytes32 txHash) {
