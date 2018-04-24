@@ -105,7 +105,7 @@ contract CoinvestToken is Ownable {
     /**
      * @dev Set owner and beginning balance.
     **/
-    function CoinvestToken()
+    constructor()
       public
     {
         balances[msg.sender] = _totalSupply;
@@ -248,7 +248,7 @@ contract CoinvestToken is Ownable {
             
             // 35000 because of base fee of 21000 and ~14000 for the fee transfer.
             gas = 35000 + gas.sub(gasleft());
-            require(_transfer(from, msg.sender, _gasPrice * gas));
+            require(_transfer(from, msg.sender, _gasPrice.mul(gas)));
         }
         
         return true;
@@ -278,7 +278,7 @@ contract CoinvestToken is Ownable {
 
         if (_gasPrice > 0) {
             gas = 35000 + gas.sub(gasleft());
-            require(_transfer(from, msg.sender, _gasPrice * gas));
+            require(_transfer(from, msg.sender, _gasPrice.mul(gas)));
         }
         return true;
     }
@@ -311,9 +311,9 @@ contract CoinvestToken is Ownable {
 
         if (_gasPrice > 0) {
             gas = 35000 + gas.sub(gasleft());
-            require(_transfer(from, msg.sender, _gasPrice * gas));
+            require(_transfer(from, msg.sender, _gasPrice.mul(gas)));
         }
-        return true;
+    return true;
     }
     
 /** ************************** PreSigned Constants ************************ **/
@@ -333,8 +333,8 @@ contract CoinvestToken is Ownable {
       public
       view
     returns (bytes32 txHash) {
-        // 0x1296830d is the function signature of transferPreSigned (ensure delegate sends to correct function).
-        return keccak256(address(this), bytes4(0x1296830d), _to, _value, _gasPrice, _nonce);
+        // 0xa9059cbb is the function signature of transfer (ensure delegate sends to correct function).
+        return keccak256(address(this), bytes4(0xa9059cbb), _to, _value, _gasPrice, _nonce);
     }
 
     /**
@@ -349,11 +349,11 @@ contract CoinvestToken is Ownable {
       public
       view
     returns (bytes32 txHash) {
-        // 0x617b390b is the function signature of approvePreSigned.
-        return keccak256(address(this), bytes4(0x617b390b), _to, _value, _gasPrice, _nonce);
+        // 0x095ea7b3 is the function signature of approve.
+        return keccak256(address(this), bytes4(0x095ea7b3), _to, _value, _gasPrice, _nonce);
     }
     
-    /**
+    /*
      * @dev Same as other get hashes but for approveAndCall so _extraData is added:
      * @param _extraData The data to include in the call to the _to contract (spender).
     **/
@@ -366,8 +366,8 @@ contract CoinvestToken is Ownable {
       public
       view
     returns (bytes32 txHash) {
-        // 0xc8d4b389 is the function signature of approveAndCallPreSigned.
-        return keccak256(address(this), bytes4(0xc8d4b389), _to, _value, _extraData, _gasPrice, _nonce);
+        // 0xcae9ca51 is the function signature of approveAndCall.
+        return keccak256(address(this), bytes4(0xcae9ca51), _to, _value, _extraData, _gasPrice, _nonce);
     }
     
     /**
