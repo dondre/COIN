@@ -90,26 +90,27 @@ contract CoinvestToken is Ownable {
     uint256 private _totalSupply = 107142857 * (10 ** 18);
     
     // Function sigs to be used within contract for signature recovery.
-    /**
-     * @notice Should these be public to allow frontends to grab or internal?
-    **/
-    bytes4 public constant transferSig = 0xa9059cbb;
-    bytes4 public constant approveSig = 0x095ea7b3;
-    bytes4 public constant increaseApprovalSig = 0xd73dd623;
-    bytes4 public constant decreaseApprovalSig = 0x66188463;
-    bytes4 public constant approveAndCallSig = 0xcae9ca51;
+    bytes4 internal constant transferSig = 0xa9059cbb;
+    bytes4 internal constant approveSig = 0x095ea7b3;
+    bytes4 internal constant increaseApprovalSig = 0xd73dd623;
+    bytes4 internal constant decreaseApprovalSig = 0x66188463;
+    bytes4 internal constant approveAndCallSig = 0xcae9ca51;
+    bytes4 internal constant revokeSignatureSig = 0xe40d89e5;
 
     // Balances for each account
     mapping(address => uint256) balances;
 
+    // Owner of account approves the transfer of an amount to another account
+    mapping(address => mapping (address => uint256)) allowed;
+    
     // Keeps track of the last nonce sent from user. Used for delegated functions.
     mapping (address => uint256) nonces;
     
     // Mapping of past used hashes: true if already used.
     mapping (address => mapping (bytes => bool)) invalidSignatures;
 
-    // Owner of account approves the transfer of an amount to another account
-    mapping(address => mapping (address => uint256)) allowed;
+    // Mapping of finalized ERC865 standard sigs => our function sigs for future-proofing
+    mapping (bytes4 => bytes4) public standardSigs;
 
     event Transfer(address indexed from, address indexed to, uint tokens);
     event Approval(address indexed from, address indexed spender, uint tokens);
@@ -121,6 +122,22 @@ contract CoinvestToken is Ownable {
       public
     {
         balances[msg.sender] = _totalSupply;
+    }
+    
+    /**
+     * @dev This code allows us to redirect pre-signed calls with different function selectors to our own.
+    **/
+    function () 
+      public
+    {
+        bytes memory calldata = msg.data;
+        bytes4 new_selector = standardSigs[msg.sig];
+        require(new_selector != 0);
+        
+        assembly {
+           mstore(add(0x20, calldata), new_selector)
+        }
+        address(this).delegatecall(calldata);
     }
 
 /** ******************************** ERC20 ********************************* **/
@@ -252,8 +269,8 @@ contract CoinvestToken is Ownable {
       internal
     returns (bool success)
     {
-        if (allowed[_owner][_spender] >= _amount) allowed[_owner][_spender] = 0;
-        else allowed[_owner][_spender] = allowed[_owner][_spender].add(_amount);
+        if (allowed[_owner][_spender] <= _amount) allowed[_owner][_spender] = 0;
+        else allowed[_owner][_spender] = allowed[_owner][_spender].sub(_amount);
         
         emit Approval(_owner, _spender, allowed[_owner][_spender]);
         return true;
@@ -462,6 +479,9 @@ contract CoinvestToken is Ownable {
     {
         uint256 gas = gasleft();
         address from = recoverRevokeHash(_signature, _sigToRevoke, _gasPrice);
+        require(!invalidSignatures[from][_signature]);
+        invalidSignatures[from][_signature] = true;
+        
         invalidSignatures[from][_sigToRevoke] = true;
         
         if (_gasPrice > 0) {
@@ -481,7 +501,7 @@ contract CoinvestToken is Ownable {
       view
     returns (bytes32 txHash)
     {
-        return keccak256(bytes4(0xe40d89e5), _sigToRevoke, _gasPrice);
+        return keccak256(revokeSignatureSig, _sigToRevoke, _gasPrice);
     }
     
     /**
@@ -640,7 +660,7 @@ contract CoinvestToken is Ownable {
         return allowed[_owner][_spender];
     }
     
-/** ***************************** Maintenance ****************************** **/
+/** ****************************** onlyOwner ******************************* **/
     
     /**
      * @dev Allow the owner to take ERC20 tokens off of this contract if they are accidentally sent.
@@ -653,6 +673,15 @@ contract CoinvestToken is Ownable {
         
         uint256 stuckTokens = lostToken.balanceOf(address(this));
         lostToken.transfer(owner, stuckTokens);
+    }
+    
+    function updateStandard(bytes4 _standardSig, bytes4 _ourSig)
+      external
+      onlyOwner
+    returns (bool success)
+    {
+        standardSigs[_standardSig] = _ourSig;
+        return true;
     }
     
 }
