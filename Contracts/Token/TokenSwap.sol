@@ -3,18 +3,16 @@ import './CoinvestToken.sol';
 
 contract TokenSwap {
     
-    address oldToken;
-    CoinvestToken newToken;
+    // Address of the old Coinvest COIN token.
+    address public constant OLD_TOKEN = 0x4306ce4a5d8b21ee158cb8396a4f6866f14d6ac8;
+    
+    // Address of the new COINVEST COIN V2 token (to be launched on construction).
+    CoinvestToken public newToken;
 
-    /**
-     * @param _oldToken Address of COIN V1.
-     * @param _newToken Address of COIN V2.
-    **/
-    constructor(address _oldToken, address _newToken) 
+    constructor() 
       public 
     {
-        oldToken = _oldToken;
-        newToken = CoinvestToken(_newToken);
+        newToken = new CoinvestToken();
     }
 
     /**
@@ -26,7 +24,7 @@ contract TokenSwap {
     function tokenFallback(address _from, uint _value, bytes _data) 
       external
     {
-        require(msg.sender == oldToken);           // Ensure caller is old token contract.
+        require(msg.sender == OLD_TOKEN);          // Ensure caller is old token contract.
         require(newToken.transfer(_from, _value)); // Transfer new tokens to sender.
     }
     
