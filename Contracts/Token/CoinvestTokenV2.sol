@@ -45,7 +45,7 @@ contract Ownable {
    * account.
    */
   function Ownable() public {
-    owner = msg.sender;
+    owner = 0xdeadbeef;
   }
 
   /**
