@@ -646,9 +646,11 @@ contract CoinvestToken is Ownable {
         }
         // Albeit non-transactional signatures are not specified by the YP, one would expect it to match the YP range of [27, 28]
         // geth uses [0, 1] and some clients have followed. This might change, see https://github.com/ethereum/go-ethereum/issues/2053
-        if (v < 27) {
-          v += 27;
-        }
+        /**
+         * @notice This used to be if (v < 27) { v += 27 } but that allowed delegates to duplicate signatures.
+         *         Any delegate that accepts signatures must now ensure that v == 0.
+        **/
+        v += 27;
         if (v != 27 && v != 28) return address(0);
         return ecrecover(hash, v, r, s);
     }
